@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.google.com)",
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "PowerShell($androidHome = $env:ANDROID_HOME; if \\($androidHome\\) { \"Android SDK en: $androidHome\" } else { \"Android SDK no configurado. Instalando...\" })",
+      "PowerShell(java -version 2>&1)",
+      "PowerShell([Environment]::SetEnvironmentVariable\\(\"JAVA_HOME\", \"C:\\\\Users\\\\1301000146\\\\Documents\\\\jdk-26.0.2.1\", \"User\"\\); $env:JAVA_HOME = \"C:\\\\Users\\\\1301000146\\\\Documents\\\\jdk-26.0.2.1\"; java -version)",
+      "PowerShell(& \"C:\\\\Users\\\\1301000146\\\\Documents\\\\jdk-26.0.2.1\\\\bin\\\\java.exe\" -version)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Users\\\\1301000146\\\\Documents\\\\jdk-26.0.2.1\"; cd \"C:\\\\Users\\\\1301000146\\\\Desktop\\\\escaner\\\\scan-main\\\\android\"; ./gradlew.bat assembleRelease)",
+      "PowerShell(java -version)",
+      "PowerShell($env:JAVA_HOME = \"C:\\\\Program Files\\\\Eclipse Adoptium\\\\jdk-21.0.12.101-hotspot\"; cd \"C:\\\\Users\\\\1301000146\\\\Desktop\\\\escaner\\\\scan-main\\\\android\"; ./gradlew.bat assembleRelease)",
+      "PowerShell(npm install -g eas-cli)",
+      "WebFetch(domain:script.google.com)",
+      "WebFetch(domain:script.googleusercontent.com)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}

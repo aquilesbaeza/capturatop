@@ -1,0 +1,86 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║         INSTRUCCIONES PARA COMPILAR EL APK - ESCÁNER INVENTARIO              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📋 DESPUÉS DE INSTALAR ANDROID STUDIO:
+═════════════════════════════════════════════════════════════════════════════
+
+1. ABRE ANDROID STUDIO
+   - Ejecuta Android Studio
+   - En el welcome screen, selecciona "Open an existing Android Studio project"
+   - Navega a: C:\Users\1301000146\Desktop\escaner\scan-main\android
+   - Click "Open"
+
+2. ESPERA A QUE SE CARGUE
+   - Android Studio descargará las dependencias necesarias (puede tomar 5-10 min)
+   - Espera hasta que veas el proyecto completamente cargado
+
+3. COMPILA EL APK
+   Opción A (Recomendado - desde PowerShell):
+   ════════════════════════════════════════════
+   Abre PowerShell y ejecuta:
+
+   cd C:\Users\1301000146\Desktop\escaner\scan-main\android
+   ./gradlew.bat assembleRelease
+
+   El APK se creará en:
+   C:\Users\1301000146\Desktop\escaner\scan-main\android\app\build\outputs\apk\release\
+
+   Opción B (Desde Android Studio):
+   ═════════════════════════════════
+   - En el menú: Build → Build Bundle(s) / APK(s) → Build APK(s)
+   - Espera a que compile
+   - El APK estará en android\app\build\outputs\apk\release\
+
+═════════════════════════════════════════════════════════════════════════════
+
+📱 DESPUÉS DE COMPILAR:
+════════════════════════
+
+El archivo APK se llamará: app-release.apk
+
+Para instalar en tu celular:
+1. Conecta el celular por USB
+2. Habilita "Modo de Desarrollador" (Settings → About phone → Build number 7 taps)
+3. Habilita "USB Debugging"
+4. Ejecuta en PowerShell:
+   adb install "C:\Users\1301000146\Desktop\escaner\scan-main\android\app\build\outputs\apk\release\app-release.apk"
+
+O simplemente:
+- Envía el APK por email/WhatsApp
+- Abre en el celular
+- Android te pedirá permiso para instalar
+- ¡Listo!
+
+═════════════════════════════════════════════════════════════════════════════
+
+🔧 CONFIGURACIÓN DE ANDROID STUDIO (Primera vez):
+
+1. Cuando abra Android Studio por primera vez:
+   - Te pedirá instalar el SDK de Android
+   - Acepta todo
+   - Espera a que termine
+
+2. Si falta algo:
+   - Tools → SDK Manager
+   - Instala:
+     ✓ Android SDK Platform 35
+     ✓ Android SDK Build Tools 35
+     ✓ Android Emulator (opcional)
+
+═════════════════════════════════════════════════════════════════════════════
+
+❓ PROBLEMAS COMUNES:
+
+"No se encuentra gradle"
+→ Reinicia PowerShell después de instalar Android Studio
+
+"ANDROID_HOME no configurado"
+→ Android Studio lo configura automáticamente
+
+"Error de permisos"
+→ Corre PowerShell como Administrador
+
+═════════════════════════════════════════════════════════════════════════════
+
+¡Avísame cuando termines de instalar Android Studio y te guío en los pasos finales!
