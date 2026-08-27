@@ -19,14 +19,13 @@
             <p class="text-xs text-gray-300" id="bdStatus">Cargando BD...</p>
         </div>
 
-        <!-- Controls Row 1: Ubicación + Exportar -->
-        <div class="grid grid-cols-3 gap-2">
-            <input type="text" id="ubicInput" placeholder="Ubicación" class="col-span-1 p-2 border border-gray-300 rounded text-xs focus:outline-none focus:border-black">
-            <button onclick="exportExcel()" class="col-span-2 bg-black text-white p-2 rounded font-semibold text-xs hover:bg-gray-800 transition">📥 Exportar Excel</button>
-        </div>
+        <!-- Controls -->
+        <input type="text" id="ubicInput" placeholder="Ubicación" class="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:border-black">
 
-        <!-- Controls Row 2: Cargar BD -->
-        <button id="loadBdBtn" class="w-full bg-gray-800 text-white p-2 rounded font-semibold text-xs hover:bg-black transition">📂 Cargar BD</button>
+        <div class="grid grid-cols-2 gap-2">
+            <button id="loadBdBtn" class="bg-gray-800 text-white p-2 rounded font-semibold text-xs hover:bg-black transition">📂 Cargar BD</button>
+            <button onclick="exportExcel()" class="bg-black text-white p-2 rounded font-semibold text-xs hover:bg-gray-800 transition">📥 Exportar Excel</button>
+        </div>
 
         <!-- Table -->
         <div class="bg-white rounded-lg border border-gray-300 overflow-hidden">
