@@ -59,8 +59,19 @@
         let database = {};
         let tableData = [];
 
+        // Esperar a que XLSX esté disponible
+        function waitForXLSX(callback) {
+            if (typeof XLSX !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(() => waitForXLSX(callback), 100);
+            }
+        }
+
         // Cargar BD automáticamente al abrir
-        window.addEventListener('load', loadDefaultBD);
+        window.addEventListener('load', () => {
+            waitForXLSX(loadDefaultBD);
+        });
 
         function loadDefaultBD() {
             fetch('ResultadosAPLICACIONDETIENDASCR179.xlsx')
