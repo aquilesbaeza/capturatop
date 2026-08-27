@@ -19,10 +19,9 @@
             <p class="text-xs text-gray-300" id="bdStatus">Cargando BD...</p>
         </div>
 
-        <!-- Controls -->
-        <input type="text" id="ubicInput" placeholder="Ubicación" class="w-full p-2 border border-gray-300 rounded text-xs focus:outline-none focus:border-black">
-
-        <div class="grid grid-cols-2 gap-2">
+        <!-- Controls - Una línea -->
+        <div class="grid grid-cols-3 gap-2">
+            <input type="text" id="ubicInput" placeholder="Ubicación" class="p-2 border border-gray-300 rounded text-xs focus:outline-none focus:border-black">
             <button id="loadBdBtn" class="bg-gray-800 text-white p-2 rounded font-semibold text-xs hover:bg-black transition">📂 Cargar BD</button>
             <button onclick="exportExcel()" class="bg-black text-white p-2 rounded font-semibold text-xs hover:bg-gray-800 transition">📥 Exportar Excel</button>
         </div>
@@ -206,8 +205,8 @@
             XLSX.writeFile(wb, `Inv_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
 
-        // 5 filas iniciales
-        for (let i = 0; i < 5; i++) addEmptyRow();
+        // 1 fila inicial
+        addEmptyRow();
     </script>
 </body>
 </html>
