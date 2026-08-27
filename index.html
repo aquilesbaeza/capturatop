@@ -590,12 +590,14 @@
             batchCaptures = [];
 
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('OCR timeout (>120s)')), 120000)
+                setTimeout(() => reject(new Error('OCR timeout (>5 min). Intenta con wifi más rápido.')), 300000)
             );
 
             const ocrPromise = Tesseract.recognize(imageData, '0123456789', {
                 logger: (m) => {
-                    addLog(`📊 ${m.status}: ${Math.round(m.progress * 100)}%`, 'info');
+                    if (m.status !== 'recognizing' || m.progress % 0.2 < 0.05) {
+                        addLog(`📊 ${m.status}: ${Math.round(m.progress * 100)}%`, 'info');
+                    }
                 }
             });
 
