@@ -586,17 +586,20 @@
     async function runOCRBatch(imageData) {
         try {
             addLog('🤖 Iniciando OCR...', 'info');
+            addLog('⏳ Cargando Tesseract (puede tardar 30-60 segundos la primera vez)...', 'warning');
             batchCaptures = [];
 
-            const result = await Tesseract.recognize(imageData, '0123456789', {
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('OCR timeout (>120s)')), 120000)
+            );
+
+            const ocrPromise = Tesseract.recognize(imageData, '0123456789', {
                 logger: (m) => {
-                    if (m.status === 'recognizing') {
-                        const progress = Math.round(m.progress * 100);
-                        addLog(`OCR procesando: ${progress}%`, 'info');
-                    }
+                    addLog(`📊 ${m.status}: ${Math.round(m.progress * 100)}%`, 'info');
                 }
             });
 
+            const result = await Promise.race([ocrPromise, timeoutPromise]);
             addLog('✓ OCR completado', 'success');
 
             const fullText = (result.data.text || '').toString();
