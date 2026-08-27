@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CapturaTops</title>
+
+    <link rel="manifest" href="manifest.json" />
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="config.js"></script>
+    <script src="db-preload.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; background: #f8f9fa; color: #333; font-size: 15px; }
+
+        header {
+            background: linear-gradient(135deg, #1a472a 0%, #2a6b42 100%);
+            color: white;
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-left h1 { font-size: 28px; margin-bottom: 5px; }
+        .header-left .info { font-size: 12px; opacity: 0.9; }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-blue { background: #0066cc; color: white; }
+        .btn-blue:hover { background: #0052a3; }
+
+        .btn-green { background: #22c55e; color: white; }
+        .btn-green:hover { background: #16a34a; }
+
+        .btn-orange { background: #f97316; color: white; }
+        .btn-orange:hover { background: #ea580c; }
+
+        .btn-gray { background: #6b7280; color: white; }
+        .btn-gray:hover { background: #4b5563; }
+
+        .btn-export { background: #059669; color: white; padding: 12px 30px; font-size: 16px; }
+        .btn-export:hover { background: #047857; }
+
+        main {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            padding-bottom: 40px;
+        }
+
+        .section { display: none; }
+        .section.active { display: block; }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f3f4f6;
+        }
+
+        th {
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        input.table-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        input.table-input:focus {
+            outline: none;
+            border-color: #0066cc;
+            background: #f0f6ff;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-small:hover { background: #dc2626; }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: #f0f6ff;
+            border-left: 4px solid #0066cc;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .summary-label { font-size: 12px; color: #666; font-weight: 600; }
+        .summary-value { font-size: 24px; font-weight: bold; color: #0066cc; margin-top: 5px; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        #camera-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 100;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #camera-modal.active {
+            display: flex;
+        }
+
+        #video-preview {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .camera-controls .btn {
+            padding: 12px 30px;
+        }
+
+        canvas, #excel-input, #photo-input {
+            display: none;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #1f2937;
+        }
+
+        .section-load-db h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .rack-input-group {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .rack-input-group .form-group {
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+
+        .rack-input-group input {
+            width: 120px;
+        }
+
+        .logs-panel {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid #333;
+            line-height: 1.5;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-error { color: #ff4444; }
+        .log-success { color: #44ff44; }
+        .log-warning { color: #ffaa00; }
+        .log-info { color: #44aaff; }
+    </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+    <div class="header-content">
+        <div class="header-left">
+            <h1>CapturaTops</h1>
+            <div class="info" id="db-info">BD: Cargando...</div>
+        </div>
+        <div class="header-buttons">
+            <button class="btn btn-blue" onclick="document.getElementById('excel-input').click()">Cargar BD</button>
+            <button class="btn btn-green" onclick="startCamera()">Tomar Foto</button>
+            <button class="btn btn-orange" onclick="document.getElementById('photo-input').click()">Subir Foto</button>
+        </div>
+    </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+    <!-- SECCIÓN: CARGAR BD -->
+    <div id="section-load-db" class="section active">
+        <div class="card">
+            <h2>Cargar Base de Datos</h2>
+            <p style="margin-bottom: 20px; color: #666;">Selecciona el archivo Excel con SKUs y descripciones</p>
+            <button class="btn btn-blue" style="padding: 15px 40px; font-size: 16px;" onclick="document.getElementById('excel-input').click()">
+                Seleccionar Archivo
+            </button>
+        </div>
+        <input type="file" id="excel-input" accept=".xlsx,.xls,.csv" onchange="handleDBUpload(event)" />
+    </div>
+
+    <!-- SECCIÓN: CAPTURA -->
+    <div id="section-capture" class="section">
+
+        <!-- Información Rack -->
+        <div class="card">
+            <h2>Información del Rack</h2>
+            <div class="rack-input-group">
+                <div class="form-group" style="flex: 0 0 auto;">
+                    <label>Número de Rack</label>
+                    <input type="text" id="rack-number" placeholder="Ej: 3003" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="card">
+            <div class="summary">
+                <div class="summary-card">
+                    <div class="summary-label">Cajas Detectadas</div>
+                    <div class="summary-value" id="total-detected">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Total Unidades</div>
+                    <div class="summary-value" id="total-units">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Logs -->
+        <div class="card">
+            <h2>Estado del Proceso</h2>
+            <div class="logs-panel" id="logs-panel">
+                <div class="log-entry log-info">👋 Listo para capturar fotos</div>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card">
+            <h2>Cajas Capturadas</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 120px;">SKU</th>
+                            <th style="width: 80px; text-align: center;">Fondo</th>
+                            <th style="width: 100px; text-align: center;">Cantidad</th>
+                            <th style="width: 80px; text-align: center;">Total</th>
+                            <th style="width: 50px; text-align: center;">-</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batch-table-body">
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                Toma o sube una foto para comenzar
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn btn-export" onclick="exportRack()">Exportar a Excel</button>
+                <button class="btn btn-gray" onclick="showLoadDBSection()">Nueva BD</button>
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<!-- CAMERA MODAL -->
+<div id="camera-modal">
+    <button class="btn btn-gray" style="position: absolute; top: 20px; right: 20px;" onclick="stopCamera()">Cerrar</button>
+    <h2 style="color: white; margin-bottom: 20px;">Tomar Fotografía</h2>
+    <video id="video-preview" playsinline autoplay></video>
+    <div class="camera-controls">
+        <button class="btn btn-gray" onclick="stopCamera()">Cancelar</button>
+        <button class="btn btn-green" onclick="capturePhoto()">Capturar</button>
+    </div>
+</div>
+
+<canvas id="canvas-capture"></canvas>
+<input type="file" id="photo-input" accept="image/*" onchange="handlePhotoUpload(event)" />
+
+<script>
+    let database = [];
+    let batchCaptures = [];
+    let videoStream = null;
+
+    // LOGS VISIBLES
+    function addLog(message, type = 'info') {
+        const panel = document.getElementById('logs-panel');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+
+        const time = new Date().toLocaleTimeString('es-CR');
+        entry.textContent = `[${time}] ${message}`;
+
+        panel.appendChild(entry);
+        panel.scrollTop = panel.scrollHeight; // Auto scroll
+    }
+
+    // INICIALIZAR
+    window.addEventListener('DOMContentLoaded', () => {
+        const saved = localStorage.getItem('topsDatabase');
+        if (saved) {
+            try {
+                database = JSON.parse(saved);
+                if (database.length > 0) {
+                    showCaptureSection();
+                    updateDBInfo();
+                }
+            } catch (e) { console.error('Error', e); }
+        }
+
+        if (database.length === 0 && window.DATABASE_PRELOAD && window.DATABASE_PRELOAD.length > 0) {
+            database = window.DATABASE_PRELOAD;
+            localStorage.setItem('topsDatabase', JSON.stringify(database));
+            showCaptureSection();
+            updateDBInfo();
+        }
+    });
+
+    // BD
+    function handleDBUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+                database = json.map(row => ({
+                    sku: String(row['CODIGO SKU'] || row['SKU'] || '').trim(),
+                    descripcion: String(row['DESCRIPCION'] || row['DESCRIPCION PRODUCTO'] || '').trim(),
+                })).filter(item => item.sku.length >= 5);
+
+                localStorage.setItem('topsDatabase', JSON.stringify(database));
+                updateDBInfo();
+                showCaptureSection();
+                alert('BD cargada: ' + database.length.toLocaleString('es-CR') + ' SKUs');
+            } catch (err) {
+                alert('Error al cargar archivo');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function updateDBInfo() {
+        document.getElementById('db-info').textContent = 'BD: ' + database.length.toLocaleString('es-CR') + ' SKUs';
+    }
+
+    // SECCIONES
+    function showLoadDBSection() {
+        document.getElementById('section-load-db').classList.add('active');
+        document.getElementById('section-capture').classList.remove('active');
+        batchCaptures = [];
+        document.getElementById('rack-number').value = '';
+    }
+
+    function showCaptureSection() {
+        document.getElementById('section-load-db').classList.remove('active');
+        document.getElementById('section-capture').classList.add('active');
+    }
+
+    // CÁMARA
+    async function startCamera() {
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+            });
+            document.getElementById('video-preview').srcObject = videoStream;
+            document.getElementById('camera-modal').classList.add('active');
+        } catch (err) {
+            alert('No se pudo acceder a la cámara');
+        }
+    }
+
+    function stopCamera() {
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+        }
+        document.getElementById('camera-modal').classList.remove('active');
+    }
+
+    function capturePhoto() {
+        const video = document.getElementById('video-preview');
+        const canvas = document.getElementById('canvas-capture');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        const imageData = canvas.toDataURL('image/jpeg', 0.6);
+        stopCamera();
+        runOCRBatch(imageData);
+    }
+
+    function handlePhotoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            alert('Selecciona una foto');
+            return;
+        }
+
+        addLog(`📷 Foto seleccionada: ${file.name} (${Math.round(file.size/1024)}KB)`, 'info');
+        addLog('⏳ Procesando... Espera 10-15 segundos', 'info');
+
+        try {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                addLog('📂 Cargada en memoria', 'info');
+                const img = new Image();
+                img.onload = () => {
+                    addLog(`🖼️ Redimensionando: ${img.width}x${img.height}`, 'info');
+                    const canvas = document.getElementById('canvas-capture');
+                    let w = Math.min(img.width, 800);
+                    let h = Math.min(img.height, 600);
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const imageData = canvas.toDataURL('image/jpeg', 0.6);
+                    addLog('✓ Preparada para OCR', 'success');
+                    runOCRBatch(imageData);
+                };
+                img.onerror = () => {
+                    addLog('❌ Error cargando imagen', 'error');
+                    alert('❌ Error al cargar la imagen');
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = () => {
+                addLog('❌ Error leyendo archivo', 'error');
+                alert('❌ Error al leer el archivo');
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            addLog(`❌ Error: ${err.message}`, 'error');
+            alert('❌ Error: ' + err.message);
+        }
+    }
+
+    // OCR
+    async function runOCRBatch(imageData) {
+        try {
+            addLog('🤖 Iniciando OCR...', 'info');
+            batchCaptures = [];
+
+            const result = await Tesseract.recognize(imageData, '0123456789', {
+                logger: (m) => {
+                    if (m.status === 'recognizing') {
+                        const progress = Math.round(m.progress * 100);
+                        addLog(`OCR procesando: ${progress}%`, 'info');
+                    }
+                }
+            });
+
+            addLog('✓ OCR completado', 'success');
+
+            const fullText = (result.data.text || '').toString();
+            addLog(`📝 Texto extraído: ${fullText.length} caracteres`, 'info');
+
+            if (!fullText || fullText.trim().length === 0) {
+                addLog('⚠️ No se extrajo texto de la foto', 'warning');
+                alert('⚠️ No se pudo leer la foto.\n\nIntenta:\n1. Mejor iluminación\n2. Foto más clara\n3. Agregar manualmente');
+                batchCaptures.push({ sku: '', fondo: 0, cantidad: 0, total: 0 });
+                renderBatchTable();
+                return;
+            }
+
+            addLog('🔍 Buscando etiquetas (patrón: SKU + Fondo + Cantidad)...', 'info');
+
+            // Buscar patrón: SKU(10dig) + Fondo + Cantidad
+            const regex = /(\d{10})\s*(\d+)\s*(\d+)/g;
+            let match;
+            let count = 0;
+
+            while ((match = regex.exec(fullText)) !== null) {
+                const sku = match[1];
+                const fondo = parseInt(match[2]);
+                const cantidad = parseInt(match[3]);
+
+                if (fondo > 0 && fondo < 100 && cantidad > 0 && cantidad < 1000) {
+                    addLog(`✓ SKU: ${sku} | Fondo: ${fondo} | Cant: ${cantidad}`, 'success');
+                    batchCaptures.push({
+                        sku: sku,
+                        fondo: fondo,
+                        cantidad: cantidad,
+                        total: fondo * cantidad
+                    });
+                    count++;
+                }
+            }
+
+            addLog(`✅ Detectadas ${count} cajas`, 'success');
+            renderBatchTable();
+
+            if (batchCaptures.length === 0) {
+                addLog('⚠️ No coinciden con el patrón esperado', 'warning');
+                alert('⚠️ No se detectaron etiquetas.\n\nAgrega manualmente o intenta otra foto más clara.');
+                batchCaptures.push({ sku: '', fondo: 0, cantidad: 0, total: 0 });
+                renderBatchTable();
+            } else {
+                alert('✅ Se detectaron ' + batchCaptures.length + ' cajas.\n\nVerifica y corrige si es necesario.');
+            }
+
+        } catch (err) {
+            addLog(`❌ Error: ${err.message}`, 'error');
+            alert('❌ Error en OCR:\n' + err.message + '\n\nIntenta de nuevo o agrega manualmente.');
+        }
+    }
+
+    // TABLA
+    function renderBatchTable() {
+        const tbody = document.getElementById('batch-table-body');
+        const totalBoxes = batchCaptures.length;
+        const totalUnits = batchCaptures.reduce((sum, item) => sum + item.total, 0);
+
+        document.getElementById('total-detected').textContent = totalBoxes;
+        document.getElementById('total-units').textContent = totalUnits;
+
+        if (totalBoxes === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Toma o sube una foto para comenzar</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = batchCaptures.map((item, idx) => `
+            <tr>
+                <td><input type="text" class="table-input" value="${item.sku}" maxlength="10" onchange="updateBatchItem(${idx}, 'sku', this.value)" /></td>
+                <td style="text-align: center;"><input type="number" class="table-input" value="${item.fondo}" min="0" onchange="updateBatchItem(${idx}, 'fondo', this.value)" style="text-align: center;" /></td>
+                <td style="text-align: center;"><input type="number" class="table-input" value="${item.cantidad}" min="0" onchange="updateBatchItem(${idx}, 'cantidad', this.value)" style="text-align: center;" /></td>
+                <td style="text-align: center; font-weight: bold; font-size: 16px;">${item.total}</td>
+                <td style="text-align: center;"><button class="btn-small" onclick="removeBatchItem(${idx})">Eliminar</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function updateBatchItem(idx, field, value) {
+        if (idx >= 0 && idx < batchCaptures.length) {
+            if (field === 'sku') {
+                batchCaptures[idx].sku = value;
+            } else {
+                batchCaptures[idx][field] = parseInt(value) || 0;
+            }
+            if (field === 'fondo' || field === 'cantidad') {
+                batchCaptures[idx].total = batchCaptures[idx].fondo * batchCaptures[idx].cantidad;
+            }
+            renderBatchTable();
+        }
+    }
+
+    function removeBatchItem(idx) {
+        batchCaptures.splice(idx, 1);
+        renderBatchTable();
+    }
+
+    // EXPORT
+    function exportRack() {
+        const rackNumber = document.getElementById('rack-number').value.trim();
+        if (!rackNumber) {
+            alert('Ingresa número de rack');
+            return;
+        }
+        if (batchCaptures.length === 0) {
+            alert('No hay datos para exportar');
+            return;
+        }
+
+        const data = batchCaptures.map((item, idx) => {
+            const product = database.find(p => p.sku === item.sku) || {};
+            return {
+                'Nº': idx + 1,
+                'Rack': rackNumber,
+                'SKU': item.sku,
+                'Descripción': product.descripcion || '',
+                'Fondo': item.fondo,
+                'Cantidad': item.cantidad,
+                'Total': item.total,
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(data);
+        ws['!cols'] = [{ wch: 4 }, { wch: 10 }, { wch: 15 }, { wch: 30 }, { wch: 8 }, { wch: 10 }, { wch: 10 }];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Rack ' + rackNumber);
+        XLSX.writeFile(wb, `CapturaTops_Rack_${rackNumber}_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+        alert('Archivo exportado correctamente');
+        batchCaptures = [];
+        document.getElementById('rack-number').value = '';
+        renderBatchTable();
+    }
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+</script>
+
+</body>
+</html>
