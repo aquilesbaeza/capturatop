@@ -283,17 +283,17 @@
         }
 
         .logs-panel {
-            background: #1a1a1a;
+            background: #0a0a0a;
             color: #00ff00;
             padding: 15px;
             border-radius: 6px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 300px;
             overflow-y: auto;
             margin-top: 20px;
-            border: 1px solid #333;
-            line-height: 1.5;
+            border: 2px solid #00ff00;
+            line-height: 1.6;
         }
 
         .log-entry {
@@ -569,19 +569,16 @@
                     runOCRBatch(imageData);
                 };
                 img.onerror = () => {
-                    addLog('❌ Error cargando imagen', 'error');
-                    alert('❌ Error al cargar la imagen');
+                    addLog('❌ Error cargando imagen. Intenta otra foto.', 'error');
                 };
                 img.src = e.target.result;
             };
             reader.onerror = () => {
-                addLog('❌ Error leyendo archivo', 'error');
-                alert('❌ Error al leer el archivo');
+                addLog('❌ Error leyendo archivo. Intenta de nuevo.', 'error');
             };
             reader.readAsDataURL(file);
         } catch (err) {
             addLog(`❌ Error: ${err.message}`, 'error');
-            alert('❌ Error: ' + err.message);
         }
     }
 
@@ -606,8 +603,7 @@
             addLog(`📝 Texto extraído: ${fullText.length} caracteres`, 'info');
 
             if (!fullText || fullText.trim().length === 0) {
-                addLog('⚠️ No se extrajo texto de la foto', 'warning');
-                alert('⚠️ No se pudo leer la foto.\n\nIntenta:\n1. Mejor iluminación\n2. Foto más clara\n3. Agregar manualmente');
+                addLog('⚠️ No se extrajo texto. Intenta mejor iluminación o foto más clara', 'warning');
                 batchCaptures.push({ sku: '', fondo: 0, cantidad: 0, total: 0 });
                 renderBatchTable();
                 return;
@@ -641,17 +637,13 @@
             renderBatchTable();
 
             if (batchCaptures.length === 0) {
-                addLog('⚠️ No coinciden con el patrón esperado', 'warning');
-                alert('⚠️ No se detectaron etiquetas.\n\nAgrega manualmente o intenta otra foto más clara.');
+                addLog('⚠️ No coinciden patrón. Agrega manualmente o intenta otra foto', 'warning');
                 batchCaptures.push({ sku: '', fondo: 0, cantidad: 0, total: 0 });
                 renderBatchTable();
-            } else {
-                alert('✅ Se detectaron ' + batchCaptures.length + ' cajas.\n\nVerifica y corrige si es necesario.');
             }
 
         } catch (err) {
-            addLog(`❌ Error: ${err.message}`, 'error');
-            alert('❌ Error en OCR:\n' + err.message + '\n\nIntenta de nuevo o agrega manualmente.');
+            addLog(`❌ Error OCR: ${err.message}. Intenta de nuevo.`, 'error');
         }
     }
 
