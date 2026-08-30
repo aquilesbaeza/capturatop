@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-08-30T00:00:00Z",
-  "total_productos": 13207,
-  "total_codigos_barras": 16654,
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "total_productos": 13209,
+  "total_codigos_barras": 16656,
   "versión": "1.0",
   "status": "actualizado"
 }
