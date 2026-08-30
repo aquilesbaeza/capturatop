@@ -2,220 +2,564 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Inventario Manual</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, minimum-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Inventario">
+    <meta name="theme-color" content="#1f2937">
+    <link rel="manifest" href="manifest.json">
+    <title>Inventario - Escáner</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/jsQR@1.4.0/dist/jsQR.js"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        html { width: 100%; }
-        body { width: 100%; margin: 0; padding: 0; font-size: 14px; overflow-x: hidden; }
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-size: 14px; }
         input, button, select { font-size: 16px !important; -webkit-appearance: none; }
-        input { border-radius: 4px; }
         button { min-height: 44px; cursor: pointer; }
-        th, td { padding: 8px 6px; }
+        #cameraPreview { width: 100%; height: auto; max-height: 60vh; }
+        .tab-active { border-bottom: 3px solid #ef4444; }
         @media (max-width: 640px) {
             body { font-size: 13px; }
-            th, td { padding: 6px 4px; }
+            .container { padding: 0.75rem; }
+            table th, table td { padding: 6px 4px; }
+        }
+        @media (min-width: 641px) {
+            .container { padding: 1rem; }
         }
     </style>
 </head>
-<body class="bg-white text-black">
-    <div class="w-full px-3 py-3 space-y-3 pb-6">
-        <!-- Hero Header -->
-        <div class="bg-gradient-to-r from-gray-200 to-gray-300 p-3 rounded-lg border-l-4 border-red-500">
-            <h1 class="text-lg font-bold text-gray-800">📦 Inventario</h1>
-            <p class="text-xs text-gray-600 mt-1" id="bdStatus">Cargando BD...</p>
+<body class="bg-gray-50 text-gray-900">
+    <div class="w-full h-screen flex flex-col">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-gray-700 to-gray-800 text-white p-3 border-b-4 border-red-500 flex-shrink-0">
+            <h1 class="text-xl font-bold">📦 Inventario Escáner</h1>
+            <p class="text-xs text-gray-300 mt-1" id="bdStatus">Cargando BD...</p>
         </div>
 
-        <!-- Controls -->
-        <div class="grid grid-cols-3 gap-2">
-            <input type="text" id="ubicInput" placeholder="Ubicación" class="p-3 border border-gray-400 rounded text-sm focus:outline-none focus:border-gray-600 bg-white">
-            <button id="loadBdBtn" class="bg-gray-500 text-white p-3 rounded font-semibold text-sm hover:bg-gray-600 active:scale-95 transition">📂 Cargar</button>
-            <button onclick="exportExcel()" class="bg-gray-700 text-white p-3 rounded font-semibold text-sm hover:bg-gray-800 active:scale-95 transition">📥 Exportar</button>
+        <!-- Tabs -->
+        <div class="flex gap-2 bg-gray-100 px-3 pt-3 flex-shrink-0 border-b border-gray-300">
+            <button onclick="switchTab('camera')" id="tab-camera" class="tab-active pb-3 font-semibold text-gray-800">📷 Cámara</button>
+            <button onclick="switchTab('manual')" id="tab-manual" class="pb-3 font-semibold text-gray-600">✏️ Manual</button>
+            <button onclick="switchTab('list')" id="tab-list" class="pb-3 font-semibold text-gray-600">📋 Listado</button>
         </div>
 
-        <!-- Table -->
-        <div class="rounded-lg overflow-hidden border border-gray-300">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm border-collapse">
-                    <thead class="bg-gray-200 border-b border-gray-400">
-                        <tr>
-                            <th class="text-left font-bold text-gray-800">SKU</th>
-                            <th class="text-center font-bold text-gray-800 w-14">Fondo</th>
-                            <th class="text-center font-bold text-gray-800 w-14">Cant.</th>
-                            <th class="text-left font-bold text-gray-800 flex-1">Descripción</th>
-                            <th class="text-center w-8"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-gray-300">
-                    </tbody>
-                    <!-- Add Row Button -->
-                    <tr class="hover:bg-gray-100 border-t border-gray-300">
-                        <td colspan="5" class="text-center p-2">
-                            <button onclick="addEmptyRow()" class="text-gray-600 hover:text-gray-800 font-bold text-2xl w-10 h-10 flex items-center justify-center active:scale-90 transition">+</button>
-                        </td>
-                    </tr>
-                </table>
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- Pestaña: Cámara -->
+            <div id="camera-tab" class="w-full p-3 space-y-3">
+                <div class="bg-white rounded-lg border border-gray-300 p-3">
+                    <button id="startCameraBtn" class="w-full bg-red-500 text-white p-3 rounded font-semibold hover:bg-red-600 active:scale-95 transition">
+                        ▶ Iniciar Cámara
+                    </button>
+                    <button id="stopCameraBtn" class="w-full bg-gray-500 text-white p-3 rounded font-semibold hover:bg-gray-600 active:scale-95 transition mt-2 hidden">
+                        ⏹ Detener Cámara
+                    </button>
+                </div>
+
+                <div id="cameraContainer" class="bg-black rounded-lg overflow-hidden border-2 border-gray-400">
+                    <video id="cameraPreview" class="w-full"></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                </div>
+
+                <div class="bg-white rounded-lg border border-gray-300 p-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Código detectado:</label>
+                    <input type="text" id="scannedCode" placeholder="Se detectará automáticamente" readonly class="w-full p-3 border border-gray-400 rounded bg-gray-100 text-center font-bold text-lg">
+                    <input type="text" id="ubicInput" placeholder="Ubicación/Posición" class="w-full p-3 border border-gray-400 rounded mt-2 focus:outline-none focus:border-gray-600 bg-white">
+                    <div id="productInfo" class="mt-3 p-3 bg-blue-50 rounded border border-blue-200 hidden">
+                        <p class="text-sm"><strong>SKU:</strong> <span id="productSku">-</span></p>
+                        <p class="text-sm"><strong>Descripción:</strong> <span id="productDesc">-</span></p>
+                        <p class="text-sm"><strong>Precio:</strong> <span id="productPrice">-</span></p>
+                        <p class="text-sm"><strong>Categoría:</strong> <span id="productCategory">-</span></p>
+                    </div>
+                    <button onclick="addScannedRow()" class="w-full bg-green-500 text-white p-3 rounded font-semibold hover:bg-green-600 active:scale-95 transition mt-2">
+                        ✅ Agregar a Inventario
+                    </button>
+                </div>
             </div>
+
+            <!-- Pestaña: Manual -->
+            <div id="manual-tab" class="w-full p-3 space-y-3 hidden">
+                <div class="bg-white rounded-lg border border-gray-300 p-3 space-y-2">
+                    <input type="text" id="manualSkuInput" placeholder="Ingrese SKU" class="w-full p-3 border border-gray-400 rounded focus:outline-none focus:border-gray-600 bg-white">
+                    <input type="text" id="ubicInput2" placeholder="Ubicación/Posición" class="w-full p-3 border border-gray-400 rounded focus:outline-none focus:border-gray-600 bg-white">
+                    <button onclick="addManualRow()" class="w-full bg-blue-500 text-white p-3 rounded font-semibold hover:bg-blue-600 active:scale-95 transition">
+                        ➕ Agregar Producto
+                    </button>
+                </div>
+                <div id="manualProductInfo" class="bg-blue-50 rounded border border-blue-200 p-3 hidden">
+                    <p class="text-sm"><strong>SKU:</strong> <span id="manualProductSku">-</span></p>
+                    <p class="text-sm"><strong>Descripción:</strong> <span id="manualProductDesc">-</span></p>
+                </div>
+            </div>
+
+            <!-- Pestaña: Listado -->
+            <div id="list-tab" class="w-full p-3 space-y-3 hidden">
+                <div class="bg-white rounded-lg border border-gray-300 p-3 flex gap-2">
+                    <input type="text" id="searchInput" placeholder="Buscar SKU..." class="flex-1 p-2 border border-gray-400 rounded text-sm focus:outline-none focus:border-gray-600 bg-white">
+                    <button onclick="exportInventory()" class="bg-gray-700 text-white px-4 py-2 rounded font-semibold hover:bg-gray-800 active:scale-95 transition whitespace-nowrap">
+                        📥 Exportar
+                    </button>
+                </div>
+                <div class="rounded-lg overflow-hidden border border-gray-300 bg-white">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm border-collapse">
+                            <thead class="bg-gray-200 border-b border-gray-400 sticky top-0">
+                                <tr>
+                                    <th class="text-left font-bold text-gray-800 p-2">SKU</th>
+                                    <th class="text-left font-bold text-gray-800 p-2">Descripción</th>
+                                    <th class="text-center font-bold text-gray-800 p-2 w-12">Cant.</th>
+                                    <th class="text-center font-bold text-gray-800 p-2 w-12">✕</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="divide-y divide-gray-300">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="emptyState" class="text-center py-8 text-gray-500">
+                    <p class="text-lg">📭 Sin datos</p>
+                    <p class="text-sm">Agrega productos usando la cámara o manual</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-200 border-t border-gray-300 p-3 flex gap-2 justify-center flex-shrink-0">
+            <button onclick="clearAll()" class="bg-red-500 text-white px-4 py-2 rounded font-semibold hover:bg-red-600 active:scale-95 transition text-sm">
+                🗑️ Limpiar
+            </button>
+            <button onclick="loadDatabase()" class="bg-gray-600 text-white px-4 py-2 rounded font-semibold hover:bg-gray-700 active:scale-95 transition text-sm">
+                📂 Cargar BD
+            </button>
         </div>
     </div>
 
     <script>
         let database = {};
-        let tableData = [];
+        let inventory = [];
+        let cameraStream = null;
+        let isScanning = false;
 
-        // Esperar a que XLSX esté disponible
-        function waitForXLSX(callback) {
-            if (typeof XLSX !== 'undefined') {
-                callback();
-            } else {
-                setTimeout(() => waitForXLSX(callback), 100);
-            }
+        // ============= SERVICE WORKER =============
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('✅ Service Worker registrado'))
+                    .catch(err => console.warn('⚠️ Service Worker error:', err));
+            });
+
+            // Escuchar actualizaciones
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data.type === 'SYNC_UPDATED') {
+                    console.log('🔄 BD actualizada:', event.data.data);
+                }
+            });
         }
 
-        // Cargar BD automáticamente al abrir
+        // ============= INICIALIZACIÓN =============
         window.addEventListener('load', () => {
-            waitForXLSX(loadDefaultBD);
+            loadDatabase();
+            loadInventoryFromStorage();
+            checkForUpdates();
         });
 
-        function loadDefaultBD() {
-            fetch('ResultadosAPLICACIONDETIENDASCR179.xlsx')
-                .then(r => r.arrayBuffer())
-                .then(buffer => {
-                    try {
-                        const workbook = XLSX.read(buffer, { type: 'array' });
-                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const rows = XLSX.utils.sheet_to_json(sheet);
-
-                        database = {};
-                        rows.forEach(row => {
-                            const sku = (row['CODIGO SKU'] || '').toString().trim();
-                            const desc = (row['DESCRIPCION'] || '').toString().trim();
-                            if (sku && desc) {
-                                database[sku] = desc;
-                            }
-                        });
-
-                        const count = Object.keys(database).length;
-                        document.getElementById('bdStatus').textContent = `✅ BD: ${count} productos`;
-                    } catch(err) {
-                        document.getElementById('bdStatus').textContent = '⚠️ Sin BD';
-                    }
+        // ============= GESTIÓN DE BASE DE DATOS =============
+        function loadDatabase() {
+            fetch('products.json')
+                .then(r => r.json())
+                .then(data => {
+                    database = data.productos || {};
+                    const count = Object.keys(database).length;
+                    const timestamp = data.metadata?.generado || new Date().toISOString();
+                    localStorage.setItem('products_timestamp', timestamp);
+                    localStorage.setItem('products_count', count);
+                    document.getElementById('bdStatus').textContent = `✅ BD: ${count} prod. - ${new Date(timestamp).toLocaleDateString('es-ES', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`;
                 })
                 .catch(() => {
-                    document.getElementById('bdStatus').textContent = '⚠️ Sin BD';
+                    // Intentar cargar desde localStorage
+                    const cached = localStorage.getItem('products_cache');
+                    if (cached) {
+                        try {
+                            database = JSON.parse(cached);
+                            const count = Object.keys(database).length;
+                            const timestamp = localStorage.getItem('products_timestamp');
+                            document.getElementById('bdStatus').textContent = `🔄 Offline: ${count} prod. (última: ${new Date(timestamp).toLocaleDateString('es-ES', { month: '2-digit', day: '2-digit' })})`;
+                        } catch (e) {
+                            document.getElementById('bdStatus').textContent = '⚠️ Sin base de datos';
+                        }
+                    } else {
+                        document.getElementById('bdStatus').textContent = '⚠️ Sin base de datos';
+                    }
                 });
         }
 
-        // Input file oculto
-        const bdInput = document.createElement('input');
-        bdInput.type = 'file';
-        bdInput.accept = '.xlsx,.xls,.csv';
-        bdInput.style.display = 'none';
-
-        bdInput.addEventListener('change', e => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => {
-                try {
-                    if (file.name.endsWith('.csv')) {
-                        const text = ev.target.result;
-                        const lines = text.split('\n');
-                        database = {};
-                        for (let i = 1; i < lines.length; i++) {
-                            if (!lines[i].trim()) continue;
-                            const [sku, desc] = lines[i].split(',').map(s => s.trim());
-                            if (sku) database[sku] = desc || '';
-                        }
-                    } else {
-                        const data = new Uint8Array(ev.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const rows = XLSX.utils.sheet_to_json(sheet);
-                        database = {};
-                        rows.forEach(row => {
-                            const sku = (row['CODIGO SKU'] || row.SKU || '').toString().trim();
-                            const desc = (row['DESCRIPCION'] || row.Descripción || '').toString().trim();
-                            if (sku && desc) {
-                                database[sku] = desc;
-                            }
-                        });
+        function checkForUpdates() {
+            fetch('sync-info.json')
+                .then(r => r.json())
+                .then(data => {
+                    const lastSync = localStorage.getItem('last_sync') || 'Nunca';
+                    const shouldUpdate = !localStorage.getItem('products_count') ||
+                                       parseInt(localStorage.getItem('products_count') || '0') !== data.total_productos;
+                    if (shouldUpdate) {
+                        console.log('📦 Nueva versión disponible');
+                        localStorage.setItem('update_available', 'true');
                     }
-                    const count = Object.keys(database).length;
-                    document.getElementById('bdStatus').textContent = `✅ BD: ${count} productos`;
-                } catch(err) {
-                    alert('Error: ' + err.message);
+                    localStorage.setItem('last_sync', data.timestamp);
+                })
+                .catch(() => console.log('No se pudo verificar actualizaciones'));
+        }
+
+        function saveInventoryToStorage() {
+            localStorage.setItem('inventory_data', JSON.stringify(inventory));
+        }
+
+        function loadInventoryFromStorage() {
+            const stored = localStorage.getItem('inventory_data');
+            if (stored) {
+                try {
+                    inventory = JSON.parse(stored);
+                    updateTable();
+                } catch (e) {
+                    inventory = [];
                 }
-            };
-
-            if (file.name.endsWith('.csv')) {
-                reader.readAsText(file);
-            } else {
-                reader.readAsArrayBuffer(file);
             }
-        });
-        document.body.appendChild(bdInput);
-
-        document.getElementById('loadBdBtn').addEventListener('click', () => bdInput.click());
-
-        function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = tableData.map((row, i) => `
-                <tr class="hover:bg-gray-50 border-b border-gray-300">
-                    <td><input type="text" value="${row.sku}" onchange="updateRow(${i}, 'sku', this.value)" maxlength="10" class="w-full p-2 border border-gray-400 rounded text-sm focus:outline-none focus:border-gray-600 bg-white" placeholder="SKU"></td>
-                    <td><input type="number" value="${row.fondo}" onchange="updateRow(${i}, 'fondo', this.value)" maxlength="2" class="w-full p-2 border border-gray-400 rounded text-sm text-center focus:outline-none focus:border-gray-600 bg-white" placeholder="0"></td>
-                    <td><input type="number" value="${row.cant}" onchange="updateRow(${i}, 'cant', this.value)" maxlength="4" class="w-full p-2 border border-gray-400 rounded text-sm text-center focus:outline-none focus:border-gray-600 bg-white" placeholder="0"></td>
-                    <td><input type="text" value="${row.desc}" class="w-full p-2 border border-gray-400 rounded text-sm bg-gray-100 focus:outline-none" readonly placeholder="Descripción"></td>
-                    <td class="text-center"><button onclick="deleteRow(${i})" class="text-gray-400 hover:text-gray-600 font-bold text-lg w-8 h-8 flex items-center justify-center active:scale-90 transition">✕</button></td>
-                </tr>
-            `).join('');
         }
 
-        function updateRow(i, field, value) {
-            tableData[i][field] = value;
-            if (field === 'sku') {
-                const desc = database[value.trim()] || '';
-                tableData[i].desc = desc;
+        function searchProduct(query) {
+            if (!query.trim()) return null;
+            const q = query.trim().toUpperCase();
+
+            // Buscar por SKU exacto
+            if (database[q]) return { sku: q, ...database[q] };
+
+            // Buscar por SKU parcial
+            for (const [sku, product] of Object.entries(database)) {
+                if (sku.includes(q)) return { sku, ...product };
             }
-            renderTable();
+
+            // Buscar por código de barras
+            for (const [sku, product] of Object.entries(database)) {
+                if (product.codigos_barras?.some(code => code.includes(q))) {
+                    return { sku, ...product };
+                }
+            }
+
+            return null;
         }
 
-        function deleteRow(i) {
-            tableData.splice(i, 1);
-            renderTable();
+        // ============= GESTIÓN DE CÁMARA =============
+        document.getElementById('startCameraBtn').addEventListener('click', startCamera);
+        document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
+
+        async function startCamera() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Tu navegador no soporta acceso a cámara. Usa Chrome, Firefox o Safari actualizado.');
+                    return;
+                }
+
+                // Intentar primero con constraints para códigos de barras (enfoque a corta distancia)
+                let constraints = {
+                    video: {
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 },
+                        focusMode: { ideal: 'continuous' },
+                        focusDistance: { ideal: 0.3 }  // Enfoque cercano para códigos
+                    },
+                    audio: false
+                };
+
+                try {
+                    cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch {
+                    // Si falla, intentar sin constraints específicas
+                    constraints = {
+                        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                        audio: false
+                    };
+                    cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                }
+
+                const video = document.getElementById('cameraPreview');
+                video.srcObject = cameraStream;
+                video.setAttribute('playsinline', 'true');
+                video.setAttribute('webkit-playsinline', 'true');
+                video.setAttribute('autoplay', 'true');
+                video.setAttribute('muted', 'true');
+
+                // Ajustar enfoque si es posible (Chrome/Android)
+                if (cameraStream && cameraStream.getTracks().length > 0) {
+                    try {
+                        const track = cameraStream.getVideoTracks()[0];
+                        const settings = track.getSettings();
+
+                        if (track.getCapabilities) {
+                            const capabilities = track.getCapabilities();
+                            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                                const constraints = { advanced: [{ focusMode: 'continuous', focusDistance: 0.2 }] };
+                                await track.applyConstraints(constraints).catch(() => {
+                                    // Continuar sin restricciones de enfoque
+                                });
+                            }
+                        }
+                    } catch (focusErr) {
+                        // Ignorar error de enfoque
+                    }
+                }
+
+                document.getElementById('startCameraBtn').classList.add('hidden');
+                document.getElementById('stopCameraBtn').classList.remove('hidden');
+                isScanning = true;
+                scanQRCode();
+            } catch (err) {
+                const errorMsg = err.name === 'NotAllowedError'
+                    ? 'Permiso de cámara denegado. Ve a Configuración > Safari > Cámara y autoriza.'
+                    : err.name === 'NotFoundError'
+                    ? 'No se encontró ninguna cámara en el dispositivo.'
+                    : 'Error: ' + err.message;
+                alert(errorMsg);
+            }
         }
 
-        function addEmptyRow() {
-            tableData.push({ sku: '', desc: '', fondo: '', cant: '' });
-            renderTable();
+        function stopCamera() {
+            isScanning = false;
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('startCameraBtn').classList.remove('hidden');
+            document.getElementById('stopCameraBtn').classList.add('hidden');
+            document.getElementById('cameraPreview').srcObject = null;
         }
 
-        function exportExcel() {
-            if (tableData.filter(r => r.sku).length === 0) {
-                alert('Agrega al menos un SKU');
+        let lastScannedCode = null;
+        let scanCounter = 0;
+
+        function scanQRCode() {
+            const video = document.getElementById('cameraPreview');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+            if (!isScanning || !video.videoWidth) {
+                requestAnimationFrame(scanQRCode);
                 return;
             }
 
-            const ubicacion = document.getElementById('ubicInput').value.trim();
-            const data = tableData.filter(r => r.sku).map(row => ({
-                'Ubicación': ubicacion,
-                'SKU': row.sku,
-                'Fondo': row.fondo || 0,
-                'Cantidad': row.cant || 0,
-                'Descripción': row.desc,
-                'Total': (parseInt(row.fondo) || 0) * (parseInt(row.cant) || 0)
-            }));
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
 
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
-            XLSX.writeFile(wb, `Inv_${new Date().toISOString().split('T')[0]}.xlsx`);
+            try {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                if (code) {
+                    const scannedValue = code.data.trim();
+                    // Evitar duplicados rápidos
+                    if (scannedValue && scannedValue !== lastScannedCode) {
+                        lastScannedCode = scannedValue;
+                        document.getElementById('scannedCode').value = scannedValue;
+                        showProductInfo(scannedValue);
+                        scanCounter = 0;
+                    } else if (scannedValue === lastScannedCode) {
+                        scanCounter++;
+                    }
+                } else {
+                    scanCounter++;
+                    if (scanCounter > 10) {
+                        lastScannedCode = null;
+                        scanCounter = 0;
+                    }
+                }
+            } catch (err) {
+                console.error('Error en escaneo:', err);
+            }
+
+            requestAnimationFrame(scanQRCode);
         }
 
-        // 1 fila inicial
-        addEmptyRow();
+        function showProductInfo(query) {
+            const product = searchProduct(query);
+            const infoDiv = document.getElementById('productInfo');
+
+            if (product) {
+                document.getElementById('productSku').textContent = product.sku;
+                document.getElementById('productDesc').textContent = product.descripcion;
+                document.getElementById('productPrice').textContent = '$' + (product.precio || '0');
+                document.getElementById('productCategory').textContent = product.categoria || '-';
+                infoDiv.classList.remove('hidden');
+            } else {
+                infoDiv.classList.add('hidden');
+            }
+        }
+
+        function addScannedRow() {
+            const scannedValue = document.getElementById('scannedCode').value.trim();
+            const ubicacion = document.getElementById('ubicInput').value.trim();
+
+            if (!scannedValue) {
+                alert('Escanea un código primero');
+                return;
+            }
+
+            const product = searchProduct(scannedValue);
+            if (!product) {
+                alert('Producto no encontrado en BD');
+                return;
+            }
+
+            inventory.push({
+                sku: product.sku,
+                descripcion: product.descripcion,
+                ubicacion: ubicacion,
+                timestamp: new Date().toISOString()
+            });
+
+            saveInventoryToStorage();
+            document.getElementById('scannedCode').value = '';
+            document.getElementById('ubicInput').value = '';
+            document.getElementById('productInfo').classList.add('hidden');
+
+            alert(`✅ ${product.sku} agregado`);
+            updateTable();
+        }
+
+        // ============= MODO MANUAL =============
+        document.getElementById('manualSkuInput').addEventListener('keyup', (e) => {
+            const value = e.target.value.trim();
+            if (value) {
+                const product = searchProduct(value);
+                const infoDiv = document.getElementById('manualProductInfo');
+
+                if (product) {
+                    document.getElementById('manualProductSku').textContent = product.sku;
+                    document.getElementById('manualProductDesc').textContent = product.descripcion;
+                    infoDiv.classList.remove('hidden');
+                } else {
+                    infoDiv.classList.add('hidden');
+                }
+            }
+        });
+
+        function addManualRow() {
+            const sku = document.getElementById('manualSkuInput').value.trim();
+            const ubicacion = document.getElementById('ubicInput2').value.trim();
+
+            if (!sku) {
+                alert('Ingresa un SKU');
+                return;
+            }
+
+            const product = searchProduct(sku);
+            if (!product) {
+                alert('SKU no encontrado en BD');
+                return;
+            }
+
+            inventory.push({
+                sku: product.sku,
+                descripcion: product.descripcion,
+                ubicacion: ubicacion,
+                timestamp: new Date().toISOString()
+            });
+
+            saveInventoryToStorage();
+            document.getElementById('manualSkuInput').value = '';
+            document.getElementById('ubicInput2').value = '';
+            document.getElementById('manualProductInfo').classList.add('hidden');
+
+            alert(`✅ ${product.sku} agregado`);
+            updateTable();
+        }
+
+        // ============= TABLA Y BÚSQUEDA =============
+        function updateTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            if (inventory.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            const searchTerm = document.getElementById('searchInput')?.value.toUpperCase() || '';
+            const filtered = inventory.filter(row =>
+                row.sku.includes(searchTerm) || row.descripcion.toUpperCase().includes(searchTerm)
+            );
+
+            tbody.innerHTML = filtered.map((row) => {
+                const actualIndex = inventory.indexOf(row);
+                return `
+                <tr class="hover:bg-gray-50 border-b border-gray-300">
+                    <td class="p-2 font-semibold text-gray-800 truncate">${row.sku}</td>
+                    <td class="p-2 text-gray-700 truncate text-xs">${row.descripcion}</td>
+                    <td class="p-2 text-center text-gray-600 text-xs">${row.ubicacion}</td>
+                    <td class="p-2 text-center">
+                        <button onclick="deleteRow(${actualIndex})" class="text-red-500 hover:text-red-700 font-bold text-lg w-8 h-8 flex items-center justify-center active:scale-90">✕</button>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+        }
+
+        document.getElementById('searchInput')?.addEventListener('keyup', updateTable);
+
+        function deleteRow(index) {
+            if (confirm('¿Eliminar este producto?')) {
+                inventory.splice(index, 1);
+                saveInventoryToStorage();
+                updateTable();
+            }
+        }
+
+        function exportInventory() {
+            if (inventory.length === 0) {
+                alert('Agrega al menos un producto');
+                return;
+            }
+
+            const data = JSON.stringify(inventory, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventario_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAll() {
+            if (confirm('¿Limpiar todo el inventario?')) {
+                inventory = [];
+                updateTable();
+            }
+        }
+
+        // ============= NAVEGACIÓN DE PESTAÑAS =============
+        function switchTab(tab) {
+            document.querySelectorAll('[id$="-tab"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active', 'text-gray-800'));
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('text-gray-600'));
+
+            document.getElementById(tab + '-tab').classList.remove('hidden');
+            document.getElementById('tab-' + tab).classList.add('tab-active', 'text-gray-800');
+            document.getElementById('tab-' + tab).classList.remove('text-gray-600');
+
+            if (tab !== 'camera' && cameraStream) {
+                stopCamera();
+            }
+
+            if (tab === 'list') {
+                setTimeout(updateTable, 0);
+            }
+        }
+
+        // Renderizar tabla inicial
+        updateTable();
     </script>
 </body>
 </html>

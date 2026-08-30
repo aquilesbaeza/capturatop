@@ -17,7 +17,28 @@
       "Bash(git init *)",
       "Bash(git config *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "WebFetch(domain:aquilesbaeza.github.io)",
+      "Bash(git commit *)",
+      "Bash(npm install *)",
+      "Bash(node scripts/excel-to-db.js \"c:/Users/1301000146/Desktop/escaner/ResultadosAPLICACIONDETIENDASCR179.xlsx\")",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git rm *)",
+      "Bash(rm -rf tops-inventory/.git)",
+      "Bash(git clean *)",
+      "Bash(cp tops-inventory/*.html .)",
+      "Bash(cp tops-inventory/*.js .)",
+      "Bash(cp tops-inventory/*.json .)",
+      "Bash(cp tops-inventory/config.js .)",
+      "Bash(cp tops-inventory/db-preload.js .)",
+      "Read(//c/tmp/**)",
+      "Bash(python3)",
+      "Bash(cd c:\\\\\\\\Users\\\\\\\\1301000146\\\\\\\\Desktop\\\\\\\\escaner)",
+      "Bash(git commit -m 'feat: Inventario manual con precarga de BD Excel y responsive S23 *)",
+      "Bash(rm -rf scan-main tops-inventory CAPTURATOP_STATUS.md EMPEZAR_AQUI.md INSTRUCCIONES_COMPILAR_APK.txt Escaner-Inventario.apk ResultadosAPLICACIONDETIENDASCR82.xls ResultadosAPLICACIONDETIENDASCR82.xlsx db-preload.js config.js sw.js)",
+      "Bash(node convert-excel-to-json.js)"
     ]
   }
 }
