@@ -1,5 +1,5 @@
 {
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "timestamp": "2026-08-30T16:45:00Z",
   "total_productos": 13209,
   "total_codigos_barras": 16656,
   "versión": "1.0",
