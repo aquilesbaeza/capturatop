@@ -334,7 +334,6 @@
         }
 
         let lastScannedCode = null;
-        let scanCounter = 0;
 
         function scanQRCode() {
             const video = document.getElementById('cameraPreview');
@@ -356,21 +355,13 @@
 
                 if (code) {
                     const scannedValue = code.data.trim();
-                    // Evitar duplicados rápidos
                     if (scannedValue && scannedValue !== lastScannedCode) {
                         lastScannedCode = scannedValue;
                         document.getElementById('scannedCode').value = scannedValue;
                         showProductInfo(scannedValue);
-                        scanCounter = 0;
-                    } else if (scannedValue === lastScannedCode) {
-                        scanCounter++;
                     }
                 } else {
-                    scanCounter++;
-                    if (scanCounter > 10) {
-                        lastScannedCode = null;
-                        scanCounter = 0;
-                    }
+                    lastScannedCode = null;
                 }
             } catch (err) {
                 console.error('Error en escaneo:', err);
@@ -485,25 +476,21 @@
             }
 
             emptyState.classList.add('hidden');
-
-            const searchTerm = document.getElementById('searchInput')?.value.toUpperCase() || '';
+            const searchTerm = (document.getElementById('searchInput')?.value || '').toUpperCase();
             const filtered = inventory.filter(row =>
                 row.sku.includes(searchTerm) || row.descripcion.toUpperCase().includes(searchTerm)
             );
 
-            tbody.innerHTML = filtered.map((row) => {
-                const actualIndex = inventory.indexOf(row);
-                return `
+            tbody.innerHTML = filtered.map((row) => `
                 <tr class="hover:bg-gray-50 border-b border-gray-300">
                     <td class="p-2 font-semibold text-gray-800 truncate">${row.sku}</td>
                     <td class="p-2 text-gray-700 truncate text-xs">${row.descripcion}</td>
                     <td class="p-2 text-center text-gray-600 text-xs">${row.ubicacion}</td>
                     <td class="p-2 text-center">
-                        <button onclick="deleteRow(${actualIndex})" class="text-red-500 hover:text-red-700 font-bold text-lg w-8 h-8 flex items-center justify-center active:scale-90">✕</button>
+                        <button onclick="deleteRow(${inventory.indexOf(row)})" class="text-red-500 hover:text-red-700 font-bold text-lg w-8 h-8 flex items-center justify-center active:scale-90">✕</button>
                     </td>
                 </tr>
-            `;
-            }).join('');
+            `).join('');
         }
 
         document.getElementById('searchInput')?.addEventListener('keyup', updateTable);
@@ -542,23 +529,17 @@
         // ============= NAVEGACIÓN DE PESTAÑAS =============
         function switchTab(tab) {
             document.querySelectorAll('[id$="-tab"]').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active', 'text-gray-800'));
-            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('text-gray-600'));
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.classList.toggle('tab-active', el.id === 'tab-' + tab);
+                el.classList.toggle('text-gray-800', el.id === 'tab-' + tab);
+                el.classList.toggle('text-gray-600', el.id !== 'tab-' + tab);
+            });
 
             document.getElementById(tab + '-tab').classList.remove('hidden');
-            document.getElementById('tab-' + tab).classList.add('tab-active', 'text-gray-800');
-            document.getElementById('tab-' + tab).classList.remove('text-gray-600');
-
-            if (tab !== 'camera' && cameraStream) {
-                stopCamera();
-            }
-
-            if (tab === 'list') {
-                setTimeout(updateTable, 0);
-            }
+            if (tab !== 'camera' && cameraStream) stopCamera();
+            if (tab === 'list') updateTable();
         }
 
-        // Renderizar tabla inicial
         updateTable();
     </script>
 </body>

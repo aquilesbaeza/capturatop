@@ -1,21 +1,10 @@
 #!/usr/bin/env node
 
-/**
- * Convertidor de Excel a JSON
- * Convierte base de datos Excel a JSON manteniendo toda la información
- * Soporta múltiples códigos de barras (UPC), cantidades por SKU
- */
-
 const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
 
-// Configuración
-const EXCEL_FILES = [
-    'ResultadosAPLICACIONDETIENDASCR179.xlsx',
-    'ResultadosAPLICACIONDETIENDASCR82.xlsx',
-];
-
+const EXCEL_FILES = ['ResultadosAPLICACIONDETIENDASCR179.xlsx', 'ResultadosAPLICACIONDETIENDASCR82.xlsx'];
 const COLUMN_MAPPINGS = {
     sku: ['CODIGO SKU', 'SKU', 'CÓDIGO SKU', 'codigo'],
     descripcion: ['DESCRIPCION', 'DESCRIPCION PRODUCTO', 'PRODUCTO', 'NOMBRE'],
